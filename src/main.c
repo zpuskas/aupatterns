@@ -67,6 +67,7 @@ void delete_subtree(struct tree_node* node);
 int illegal_transition(const int parent_id, const int child_id, const int branch_ids[], const int level);
 void print_graph_tree(const char* file_name, const struct tree_node* const root_node, const int max_level);
 void print_subnodes(FILE* dot_file, const struct tree_node* const node, const int max_level);
+void count_valid_patterns(const struct tree_node* const root, int pattern_count[], int level);
 
 /*
  * Main function, program entry.
@@ -74,7 +75,10 @@ void print_subnodes(FILE* dot_file, const struct tree_node* const node, const in
 int main(int argc, char* argv[])
 {
     struct tree_node* root_node;    /* root of the pattern tree, never part of the unlock pattern */
+    int pattern_count[MAX_POINTS]; /* number of patterns for each length (count branches for each length)*/
     int i;
+    int theoretical;
+    int sum = 0;
 
     /* currently no arguments are accepted */
     /* TODO: add option to specify output file */
@@ -90,16 +94,21 @@ int main(int argc, char* argv[])
     /* add subnodes */
     add_subnodes(root_node, 0);
 
-    /* print separate file for each starting node */
-    for(i=0; (i < MAX_POINTS) && (root_node->child_nodes[i] != NULL); i++)
+    /* initialize pattern count */
+    for(i = 0; i < MAX_POINTS; i++)
+        pattern_count[i] = 0;
+
+    /* count patterns */
+    count_valid_patterns(root_node, pattern_count, 0);
+    
+    theoretical = 1;
+    for(i = 0; i < MAX_POINTS; i++)
     {
-        /* default file name to overwrite, ONLY works for 1-9! */
-        char file_name[] = "aupatterns0.dot";
-        /* generate file name */
-        sprintf(file_name, "aupatterns%d.dot", i+1);
-        /* print dot file for graphviz */
-        print_graph_tree(file_name, root_node->child_nodes[i], MAX_POINTS);
+        theoretical = theoretical * (MAX_POINTS - i);
+        printf("Number of patterns of lenght %d: %d (theoretical %d)\n", i+1, pattern_count[i], theoretical);
+        sum += pattern_count[i];
     }
+    printf("Number of all available patterns: %d\n", sum);
 
     /* clean up */
     delete_subtree(root_node);
@@ -133,7 +142,7 @@ void add_subnodes(struct tree_node* parent_node, const int level)
 {
     static int node_ids[MAX_POINTS]; /* array to keep track of the current branch */
     int child_count = 0; /* number of children for this node */
-    int i,j; 
+    int i,j;
 
     for(i = 1; i <= MAX_POINTS; i++)
     {
@@ -210,8 +219,7 @@ int illegal_transition(const int parent_id, const int child_id, const int branch
     const int blocker = block_matrix[parent_id-1][child_id-1];    /* id of the blocker node for this transition */
     int i;
 
-    /* no nodes have been added yet so legal (a.k.a any node can be the first, since transition
-     * node 0 is always legal) */
+    /* no nodes have been added yet so legal (any node can be the first, since transition node 0 is always legal) */
     if((level == 0) || (blocker == 0))
         return 0;
 
@@ -288,6 +296,30 @@ void print_subnodes(FILE* dot_file, const struct tree_node* const node, const in
 
     /* remove current node from uid */
     uid = uid / 10;
+
+    return;
+}
+
+/*
+ * Count all valid android unlock patterns
+ *
+ * \param root root of the pattern tree to walk through
+ * \param pattern_count array to store the count for each length of patterns
+ * \param level level of the current tree
+ */
+void count_valid_patterns(const struct tree_node* const root, int pattern_count[], int level)
+{
+    int i;
+    
+
+    /* do counting for every child node */
+    for(i=0; (i < MAX_POINTS) && (root->child_nodes[i] != NULL); i++)
+    {
+        pattern_count[level] = pattern_count[level] + 1;
+
+        count_valid_patterns(root->child_nodes[i], pattern_count, level + 1);
+    }
+
 
     return;
 }
