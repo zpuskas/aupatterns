@@ -234,6 +234,8 @@ void delete_subtree(struct tree_node *node)
         node->child_nodes[i] = NULL;
     }
 
+    node->child_count = 0;
+
     return;
 }
 
