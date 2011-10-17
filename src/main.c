@@ -39,14 +39,13 @@
 
 /*
  * TODO:
- * - print patterns to file
- * - print random patterns to screen (for generation)
  * - print valid patterns if dots are given (try to guess the probale one?)
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 
 /* Number of points in the pattern which 
  * (it is also the maximum depth for the tree) */
@@ -70,6 +69,7 @@ const int block_matrix[10][10] = {
 /* Node for the pattern tree */
 struct tree_node {
     int id;
+    int child_count;
     struct tree_node *parent_node;
     struct tree_node *child_nodes[MAX_POINTS];
 };
@@ -80,7 +80,11 @@ void delete_subtree(struct tree_node *node);
 int illegal_transition(const int parent_id, const int child_id, 
                        const int branch_ids[], const int level);
 void count_valid_patterns(const struct tree_node *const root, 
-                          int pattern_count[], int level);
+                          int pattern_count[], const int level);
+void subtree_to_file(const struct tree_node * const node, 
+                     FILE* const output_file);
+void print_summary(const struct tree_node * const root_node);
+void print_random_patterns(const struct tree_node * const root_node, int len);
 
 /*
  * Main function, program entry.
@@ -88,13 +92,36 @@ void count_valid_patterns(const struct tree_node *const root,
 int main(int argc, char *argv[])
 {
     struct tree_node *root_node;
-    int pattern_count[MAX_POINTS];
-    int i;
-    int sum = 0;
+    int opt;
+    int summary_flag = 0; 
+    int gen_pattern_len = 0;
+    FILE *pattern_file = NULL;
 
     /* currently no arguments are accepted */
-    if (argc > 1)
-        printf("Program %s does not accept arguments\n", argv[0]);
+    while((opt = getopt(argc, argv, "sr:o:h")) != -1) {
+        switch (opt) {
+        case 's':
+            summary_flag = 1;
+            break;
+        case 'r':
+            gen_pattern_len = atoi(optarg);
+            break;
+        case 'o':
+            pattern_file = fopen(optarg, "w");
+            if (pattern_file == NULL) {
+                fprintf(stderr, 
+                "Could not open \"%s\" output file for writting",
+                optarg);
+            }
+            break;
+        case 'h':
+        default:
+            fprintf(stderr,
+                    "Usage: %s [-s] [-r length] [-o file]\n",
+                    argv[0]);
+            return EXIT_FAILURE;
+        }
+    }
 
     /* init root node, not part of the unlock pattern */
     root_node = malloc(sizeof(struct tree_node));
@@ -104,22 +131,24 @@ int main(int argc, char *argv[])
 
     add_subnodes(root_node, 0);
 
-    for (i = 0; i < MAX_POINTS; i++) {
-        pattern_count[i] = 0;
+    if (summary_flag > 0) {
+        print_summary(root_node);
     }
 
-    count_valid_patterns(root_node, pattern_count, 0);
-
-    for (i = 0; i < MAX_POINTS; i++) {
-        printf("Number of patterns of lenght %d: %d\n", i+1, pattern_count[i]);
-        sum += pattern_count[i];
+    if (pattern_file != NULL) {
+        subtree_to_file(root_node, pattern_file);
     }
 
-    printf("Number of all available patterns: %d\n", sum);
+    if (gen_pattern_len > 0) {
+        print_random_patterns(root_node, gen_pattern_len);
+    }
 
     /* clean up */
     delete_subtree(root_node);
     free(root_node);
+    if (pattern_file != NULL) {
+        fclose(pattern_file);
+    }
 
     return EXIT_SUCCESS;
 }
@@ -134,6 +163,7 @@ void init_subnode_list(struct tree_node *node)
     int i;
 
     for (i = 0; i < MAX_POINTS; i++) {
+        node->child_count = 0;
         node->child_nodes[i] = NULL;
     }
 
@@ -150,7 +180,6 @@ void add_subnodes(struct tree_node *parent_node,
                   const int level)
 {
     static int node_ids[MAX_POINTS]; /* keep track of the current branch */
-    int child_count = 0;    /* number of children for this node */
     int i, j;
 
     for (i = 1; i <= MAX_POINTS; i++) {
@@ -171,15 +200,17 @@ void add_subnodes(struct tree_node *parent_node,
 
         /* save new node id */
         node_ids[level] = i;
-        parent_node->child_nodes[child_count] =
+        parent_node->child_nodes[parent_node->child_count] =
             malloc(sizeof(struct tree_node));
-        parent_node->child_nodes[child_count]->id = i;
-        parent_node->child_nodes[child_count]->parent_node = parent_node;
-        init_subnode_list(parent_node->child_nodes[child_count]);
+        parent_node->child_nodes[parent_node->child_count]->id = i;
+        parent_node->child_nodes[parent_node->child_count]->parent_node =
+            parent_node;
+        init_subnode_list(parent_node->child_nodes[parent_node->child_count]);
 
         /* calculate subnodes for this child */
-        add_subnodes(parent_node->child_nodes[child_count], level + 1);
-        child_count++;
+        add_subnodes(parent_node->child_nodes[parent_node->child_count],
+                     level + 1);
+        parent_node->child_count++;
 
         /* branch for this node is done, so remove it */
         node_ids[level] = 0;
@@ -197,7 +228,7 @@ void delete_subtree(struct tree_node *node)
 {
     int i;
 
-    for (i = 0; (i < MAX_POINTS) && (node->child_nodes[i] != NULL); i++) {
+    for (i = 0; i < node->child_count; i++) {
         delete_subtree(node->child_nodes[i]);
         free(node->child_nodes[i]);
         node->child_nodes[i] = NULL;
@@ -247,15 +278,99 @@ int illegal_transition(const int parent_id,
  */
 void count_valid_patterns(const struct tree_node *const root,
                           int pattern_count[], 
-                          int level)
+                          const int level)
 {
     int i;
 
-    for (i = 0; (i < MAX_POINTS) && (root->child_nodes[i] != NULL); i++) {
+    for (i = 0; i < root->child_count; i++) {
         pattern_count[level] = pattern_count[level] + 1;
         count_valid_patterns(root->child_nodes[i], pattern_count, level + 1);
     }
 
     return;
+}
+
+/*
+ * Print (sub)patterns to file
+ */
+void subtree_to_file(const struct tree_node * const node, 
+                     FILE* const output_file)
+{
+    static int branch;
+    int i;
+
+    if (branch == 0) {
+        branch = node->id;
+    }
+
+    for(i = 0; i < node->child_count; i++) {
+        fprintf(output_file, "%d\n", (branch * 10) + node->child_nodes[i]->id);
+    }
+
+    for(i = 0; i < node->child_count; i++) {
+        branch = branch * 10 + node->child_nodes[i]->id;
+        subtree_to_file(node->child_nodes[i], output_file);
+        branch = branch / 10;
+    }
+
+    return;
+}
+
+/*
+ * Print summary of available patterns
+ *
+ * \param root_node Root node of the pattern tree
+ */
+void print_summary(const struct tree_node * const root_node)
+{
+    int pattern_count[MAX_POINTS];
+    int sum = 0;
+    int i;
+
+    for (i = 0; i < MAX_POINTS; i++) {
+        pattern_count[i] = 0;
+    }
+
+    count_valid_patterns(root_node, pattern_count, 0);
+
+    for (i = 0; i < MAX_POINTS; i++) {
+        printf("Number of patterns of lenght %d: %d\n", i+1, pattern_count[i]);
+        sum += pattern_count[i];
+    }
+    printf("-------------------------------------------\n");
+    printf("Number of all available patterns: %d\n", sum);
+
+    return;
+}
+
+/*
+ * Print 10 random unlock patterns of specified length
+ *
+ * \param root_node Root node of the pattern tree
+ * \param len length of the patterns to print (minimum 4)
+ */
+void print_random_patterns(const struct tree_node * const root_node, int len)
+{
+    int i;
+    int pattern_len;
+    const struct tree_node * current_node = root_node;
+    
+    if ((len < 4) || (len > 9)) {
+        fprintf(stderr, "%d is invalid pattern length. Must be 4-9!\n", len);
+    }
+
+    srand(time(NULL));
+
+    for(i = 0; i < 10; i++) {
+        pattern_len = 0;
+        current_node = root_node;
+        while (pattern_len < len) {
+            int dot = (int)(rand() % current_node->child_count);
+            printf("%d", current_node->child_nodes[dot]->id);
+            current_node = current_node->child_nodes[dot];
+            pattern_len++;
+        }
+        printf("\n");
+    }
 }
 
