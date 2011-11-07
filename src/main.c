@@ -51,8 +51,16 @@
  * (it is also the maximum depth for the tree) */
 #define MAX_POINTS 9
 
+/* Node for the pattern tree */
+struct tree_node {
+    int id;
+    int child_count;
+    struct tree_node *parent_node;
+    struct tree_node *child_nodes[MAX_POINTS];
+};
+
 /* Matrix describing which transition is blocked by which node */
-const int block_matrix[10][10] = {
+int pattern_block_matrix[10][10] = {
    /*0, 1, 2, 3, 4, 5, 6, 7, 8, 9 */
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, /* 0 */
     {0, 0, 0, 2, 0, 0, 0, 4, 0, 5}, /* 1 */
@@ -66,25 +74,22 @@ const int block_matrix[10][10] = {
     {0, 5, 0, 6, 0, 0, 0, 8, 0, 0}, /* 9 */
 };
 
-/* Node for the pattern tree */
-struct tree_node {
-    int id;
-    int child_count;
-    struct tree_node *parent_node;
-    struct tree_node *child_nodes[MAX_POINTS];
-};
+/* Matrix describing which transition is blocked by which node for guessing */
+int guess_matrix[10][10];
 
 void init_subnode_list(struct tree_node *node);
-void add_subnodes(struct tree_node *parent_node, const int level);
+void add_subnodes(struct tree_node *parent_node, const int level, int block_matrix[][10]);
 void delete_subtree(struct tree_node *node);
 int illegal_transition(const int parent_id, const int child_id, 
-                       const int branch_ids[], const int level);
+                       const int branch_ids[], const int level,
+                       int block_matrix[][10]);
 void count_valid_patterns(const struct tree_node *const root, 
                           int pattern_count[], const int level);
 void subtree_to_file(const struct tree_node * const node, 
                      FILE* const output_file);
 void print_summary(const struct tree_node * const root_node);
 void print_random_patterns(const struct tree_node * const root_node, int len);
+void fill_guess_matrix(char* nodelist, int block_matrix[][10]);
 
 /*
  * Main function, program entry.
@@ -92,19 +97,25 @@ void print_random_patterns(const struct tree_node * const root_node, int len);
 int main(int argc, char *argv[])
 {
     struct tree_node *root_node;
+    struct tree_node *guess_root_node;
     int opt;
-    int summary_flag = 0; 
+    int summary_flag = 0;
+    int guess_flag = 0;
     int gen_pattern_len = 0;
-    FILE *pattern_file = NULL;
+    FILE *pattern_file = NULL; 
 
     /* currently no arguments are accepted */
-    while((opt = getopt(argc, argv, "sr:o:h")) != -1) {
+    while((opt = getopt(argc, argv, "sr:o:g:e:h")) != -1) {
         switch (opt) {
         case 's':
             summary_flag = 1;
             break;
         case 'r':
-            gen_pattern_len = atoi(optarg);
+            if(atoi(optarg) > 0) {
+                gen_pattern_len = atoi(optarg);
+            } else {
+                fprintf(stderr, "Invalid parameter %s for -r flag!", optarg);
+            }
             break;
         case 'o':
             pattern_file = fopen(optarg, "w");
@@ -113,6 +124,13 @@ int main(int argc, char *argv[])
                 "Could not open \"%s\" output file for writting",
                 optarg);
             }
+            break;
+        case 'g':
+            guess_flag = 1;
+            fill_guess_matrix(optarg, guess_matrix);
+            break;
+        case 'e':
+            printf("Edge: %d\n", atoi(optarg));
             break;
         case 'h':
         default:
@@ -129,7 +147,8 @@ int main(int argc, char *argv[])
     root_node->parent_node = root_node;
     init_subnode_list(root_node);
 
-    add_subnodes(root_node, 0);
+    /* build the entire valid pattern tree */
+    add_subnodes(root_node, 0, pattern_block_matrix);
 
     if (summary_flag > 0) {
         print_summary(root_node);
@@ -143,9 +162,20 @@ int main(int argc, char *argv[])
         print_random_patterns(root_node, gen_pattern_len);
     }
 
+    if(guess_flag > 0) {
+        guess_root_node = malloc(sizeof(struct tree_node));
+        guess_root_node->id = 0;
+        guess_root_node->parent_node = guess_root_node;
+        init_subnode_list(guess_root_node);
+        add_subnodes(guess_root_node, 0, guess_matrix);
+        print_summary(guess_root_node);
+    }
+
     /* clean up */
     delete_subtree(root_node);
+    delete_subtree(guess_root_node);
     free(root_node);
+    free(guess_root_node);
     if (pattern_file != NULL) {
         fclose(pattern_file);
     }
@@ -177,7 +207,7 @@ void init_subnode_list(struct tree_node *node)
  * \param level level of the tree we are on
  */
 void add_subnodes(struct tree_node *parent_node, 
-                  const int level)
+                  const int level, int block_matrix[][10])
 {
     static int node_ids[MAX_POINTS]; /* keep track of the current branch */
     int i, j;
@@ -194,7 +224,9 @@ void add_subnodes(struct tree_node *parent_node,
         }
 
         if ((present > 0) || 
-            (illegal_transition(parent_node->id, i, node_ids, level) > 0)) {
+            (illegal_transition(parent_node->id, i, node_ids, 
+                                level, block_matrix) > 0))
+        {
             continue;
         }
 
@@ -209,7 +241,7 @@ void add_subnodes(struct tree_node *parent_node,
 
         /* calculate subnodes for this child */
         add_subnodes(parent_node->child_nodes[parent_node->child_count],
-                     level + 1);
+                     level + 1, block_matrix);
         parent_node->child_count++;
 
         /* branch for this node is done, so remove it */
@@ -252,14 +284,21 @@ void delete_subtree(struct tree_node *node)
 int illegal_transition(const int parent_id, 
                        const int child_id,
                        const int branch_ids[], 
-                       const int level)
+                       const int level,
+                       int block_matrix[][10])
 {
-    const int blocker = block_matrix[parent_id][child_id];
+    int blocker = block_matrix[parent_id][child_id];
     int i;
 
     /* legal transition if there is no blocker */
     if (blocker == 0) {
         return 0;
+    }
+
+    /* illegal transition because it is disabled */
+    if (blocker == -1)
+    {
+        return 1;
     }
 
     for (i = 0; i < level; i++) {
@@ -374,5 +413,46 @@ void print_random_patterns(const struct tree_node * const root_node, int len)
         }
         printf("\n");
     }
+
+    return;
+}
+
+/*
+ * Fill up the restricted transition matrix with the limited transitions
+ *
+ * \param nodelist node numbers
+ * \param block_matrix the transion matrix to set up
+ */
+void fill_guess_matrix(char* nodelist, int block_matrix[][10])
+{
+    int nodes[MAX_POINTS] = {0};
+    int i,j;
+    
+    /* init all transitions to illegal */
+    for(i=0; i<MAX_POINTS+1; i++) {
+        for(j=0; j<10; j++) {
+            block_matrix[i][j] = -1;
+        }
+    }
+
+    /* add nodes to be used of guessing */
+    for(i=0, j=0; nodelist[i]!='\0'; i++)
+    {
+        j = nodelist[i] - '0';
+        if((j >= 0) && (j <= MAX_POINTS)) {
+            nodes[j] = j;
+        }
+    }
+
+    /* copy valid parts from the original transition matrix */
+    for(i = 0; i < MAX_POINTS+1; i++)
+    {
+        for(j = 0; j < MAX_POINTS+1; j++)
+        {
+            block_matrix[nodes[i]][nodes[j]] = pattern_block_matrix[nodes[i]][nodes[j]];
+        }
+    }
+    
+    return;
 }
 
