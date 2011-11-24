@@ -1,20 +1,33 @@
 /*
  * Andorid unlock pattern calculator.
- * Copyright (C) 2011  Zoltan Puskas
+ * Copyright (c) 2011  Zoltan Puskas
+ *  All rights reserved.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software and redistributred under the 3-clause BSD
+ * license as stated below.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. The name of the author may not be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  *
  * Maintainer: Zoltan Puskas <zoltan@sinustrom.info>
  * Created on: 2011.10.10.
@@ -77,8 +90,10 @@ int pattern_block_matrix[10][10] = {
 /* Matrix describing which transition is blocked by which node for guessing */
 int guess_matrix[10][10];
 
+void print_help(const char* argv0);
 void init_subnode_list(struct tree_node *node);
-void add_subnodes(struct tree_node *parent_node, const int level, int block_matrix[][10]);
+void add_subnodes(struct tree_node *parent_node, const int level, 
+                  int block_matrix[][10]);
 void delete_subtree(struct tree_node *node);
 int illegal_transition(const int parent_id, const int child_id, 
                        const int branch_ids[], const int level,
@@ -102,7 +117,12 @@ int main(int argc, char *argv[])
     int summary_flag = 0;
     int guess_flag = 0;
     int gen_pattern_len = 0;
-    FILE *pattern_file = NULL; 
+    FILE *pattern_file = NULL;
+
+    if (argc < 2) {
+        fprintf(stderr, "No arguments specified.\n");
+        print_help(argv[0]);
+    }
 
     /* currently no arguments are accepted */
     while((opt = getopt(argc, argv, "sr:o:g:e:h")) != -1) {
@@ -134,53 +154,75 @@ int main(int argc, char *argv[])
             break;
         case 'h':
         default:
-            fprintf(stderr,
-                    "Usage: %s [-s] [-r length] [-o file]\n",
-                    argv[0]);
+            print_help(argv[0]);
             return EXIT_FAILURE;
         }
     }
 
-    /* init root node, not part of the unlock pattern */
-    root_node = malloc(sizeof(struct tree_node));
-    root_node->id = 0;
-    root_node->parent_node = root_node;
-    init_subnode_list(root_node);
+    if (summary_flag > 0 || pattern_file != NULL  || gen_pattern_len > 0) {
+        /* init root node, not part of the unlock pattern */
+        root_node = malloc(sizeof(struct tree_node));
+        root_node->id = 0;
+        root_node->parent_node = root_node;
+        init_subnode_list(root_node);
 
-    /* build the entire valid pattern tree */
-    add_subnodes(root_node, 0, pattern_block_matrix);
+        /* build the entire valid pattern tree */
+        add_subnodes(root_node, 0, pattern_block_matrix);
 
-    if (summary_flag > 0) {
-        print_summary(root_node);
-    }
+        if (summary_flag > 0) {
+            print_summary(root_node);
+        }
 
-    if (pattern_file != NULL) {
-        subtree_to_file(root_node, pattern_file);
-    }
+        if (pattern_file != NULL) {
+            subtree_to_file(root_node, pattern_file);
+            fclose(pattern_file);
+        }
 
-    if (gen_pattern_len > 0) {
-        print_random_patterns(root_node, gen_pattern_len);
+        if (gen_pattern_len > 0) {
+            print_random_patterns(root_node, gen_pattern_len);
+        }
+
+        /* clean up */
+        delete_subtree(root_node);
+        free(root_node);
     }
 
     if(guess_flag > 0) {
+        /* init root node, not part of the unlock pattern */
         guess_root_node = malloc(sizeof(struct tree_node));
         guess_root_node->id = 0;
         guess_root_node->parent_node = guess_root_node;
         init_subnode_list(guess_root_node);
-        add_subnodes(guess_root_node, 0, guess_matrix);
-        print_summary(guess_root_node);
-    }
 
-    /* clean up */
-    delete_subtree(root_node);
-    delete_subtree(guess_root_node);
-    free(root_node);
-    free(guess_root_node);
-    if (pattern_file != NULL) {
-        fclose(pattern_file);
+        /* build the valid pattern tree based on available nodes */
+        add_subnodes(guess_root_node, 0, guess_matrix);
+
+        /* print the summary */
+        print_summary(guess_root_node);
+
+        if (pattern_file != NULL) {
+            subtree_to_file(guess_root_node, pattern_file);
+            fclose(pattern_file);
+        }
+
+        /* clean up */
+        delete_subtree(guess_root_node);
+        free(guess_root_node);
     }
 
     return EXIT_SUCCESS;
+}
+
+/*
+ * Print help and usage information for the user.
+ */
+void print_help(const char* argv0)
+{
+    fprintf(stderr,
+            "Usage: %s [-s] [-r length] [-o file] [-g nodes] [-e edges] [-h]\n",
+            argv0);
+
+    return;
 }
 
 /*
@@ -449,7 +491,8 @@ void fill_guess_matrix(char* nodelist, int block_matrix[][10])
     {
         for(j = 0; j < MAX_POINTS+1; j++)
         {
-            block_matrix[nodes[i]][nodes[j]] = pattern_block_matrix[nodes[i]][nodes[j]];
+            block_matrix[nodes[i]][nodes[j]] =
+                    pattern_block_matrix[nodes[i]][nodes[j]];
         }
     }
     
