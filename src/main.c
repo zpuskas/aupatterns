@@ -217,15 +217,27 @@ int main(int argc, char *argv[])
     }
     return EXIT_SUCCESS;
 }
-
 /*
  * Print help and usage information for the user.
  */
 void print_help(const char* argv0)
 {
     fprintf(stderr,
-            "Usage: %s [-s] [-r length] [-o file] [-g nodes] [-e edges] [-h]\n",
+            "Usage: %s [-s] [-r LENGTH] [-o FILE] [-g NODES] [-e EDGE] [-h]\n",
             argv0);
+    fprintf(stderr, "\n");
+    fprintf(stderr,
+            "   -s\tPrint summary on all patterns.\n");
+    fprintf(stderr,
+            "   -r\tGenerate random unlock patterns with given LENGTH.\n");
+    fprintf(stderr,
+            "   -o\tOutput patterns to file. Can be used with -s and -g.\n");
+    fprintf(stderr,
+            "   -g\tGuess patterns based on the NODES. (eg.: 73652)\n");
+    fprintf(stderr,
+            "   -e\tEdge not to include while guessing. (eg.: 12)\n");
+    fprintf(stderr,
+            "   -h\tPrint this help message.\n");
 
     return;
 }
