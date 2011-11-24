@@ -118,6 +118,7 @@ int main(int argc, char *argv[])
     int guess_flag = 0;
     int gen_pattern_len = 0;
     FILE *pattern_file = NULL;
+    char *guess_node_list;
 
     if (argc < 2) {
         fprintf(stderr, "No arguments specified.\n");
@@ -148,6 +149,7 @@ int main(int argc, char *argv[])
         case 'g':
             guess_flag = 1;
             fill_guess_matrix(optarg, guess_matrix);
+            guess_node_list = optarg;
             break;
         case 'e':
             printf("Edge: %d\n", atoi(optarg));
@@ -171,11 +173,10 @@ int main(int argc, char *argv[])
 
         if (summary_flag > 0) {
             print_summary(root_node);
-        }
-
-        if (pattern_file != NULL) {
-            subtree_to_file(root_node, pattern_file);
-            fclose(pattern_file);
+            if (pattern_file != NULL) {
+                fprintf(pattern_file, "Patterns based on all nodes\n");
+                subtree_to_file(root_node, pattern_file);
+            }
         }
 
         if (gen_pattern_len > 0) {
@@ -201,8 +202,9 @@ int main(int argc, char *argv[])
         print_summary(guess_root_node);
 
         if (pattern_file != NULL) {
+            fprintf(pattern_file, "Guessed patterns based on nodes: %s\n",
+                    guess_node_list);
             subtree_to_file(guess_root_node, pattern_file);
-            fclose(pattern_file);
         }
 
         /* clean up */
@@ -210,6 +212,9 @@ int main(int argc, char *argv[])
         free(guess_root_node);
     }
 
+    if (pattern_file != NULL) {
+        fclose(pattern_file);
+    }
     return EXIT_SUCCESS;
 }
 
@@ -408,6 +413,7 @@ void print_summary(const struct tree_node * const root_node)
 {
     int pattern_count[MAX_POINTS];
     int sum = 0;
+    int valid_sum = 0;
     int i;
 
     for (i = 0; i < MAX_POINTS; i++) {
@@ -417,11 +423,16 @@ void print_summary(const struct tree_node * const root_node)
     count_valid_patterns(root_node, pattern_count, 0);
 
     for (i = 0; i < MAX_POINTS; i++) {
-        printf("Number of patterns of lenght %d: %d\n", i+1, pattern_count[i]);
+        printf("Number of patterns for lenght %d: %d\t\
+                Minutes to bruteforce*: %d\n",
+                i+1, pattern_count[i], pattern_count[i]/5);
         sum += pattern_count[i];
+        if (i > 2) valid_sum += pattern_count[i];
     }
     printf("-------------------------------------------\n");
     printf("Number of all available patterns: %d\n", sum);
+    printf("Number of valid patterns (length >= 4): %d\n", valid_sum);
+    printf("(* assuming 5 tries in 30 seconds and then a 30 second timeout)\n");
 
     return;
 }
