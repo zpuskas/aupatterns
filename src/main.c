@@ -50,11 +50,6 @@
  *
  */
 
-/*
- * TODO:
- * - print valid patterns if dots are given (try to guess the probale one?)
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
