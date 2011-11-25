@@ -105,6 +105,7 @@ void subtree_to_file(const struct tree_node * const node,
 void print_summary(const struct tree_node * const root_node);
 void print_random_patterns(const struct tree_node * const root_node, int len);
 void fill_guess_matrix(char* nodelist, int block_matrix[][10]);
+void disable_guess_edge(char* edge, int block_matrix[][10]);
 
 /*
  * Main function, program entry.
@@ -119,10 +120,17 @@ int main(int argc, char *argv[])
     int gen_pattern_len = 0;
     FILE *pattern_file = NULL;
     char *guess_node_list;
+    int i, j;
 
     if (argc < 2) {
-        fprintf(stderr, "No arguments specified.\n");
         print_help(argv[0]);
+    }
+
+    /* init all transitions to illegal in the guess matrix */
+    for(i=0; i<MAX_POINTS+1; i++) {
+        for(j=0; j<10; j++) {
+            guess_matrix[i][j] = -1;
+        }
     }
 
     /* currently no arguments are accepted */
@@ -152,7 +160,7 @@ int main(int argc, char *argv[])
             guess_node_list = optarg;
             break;
         case 'e':
-            printf("Edge: %d\n", atoi(optarg));
+            disable_guess_edge(optarg, guess_matrix);
             break;
         case 'h':
         default:
@@ -222,6 +230,10 @@ int main(int argc, char *argv[])
  */
 void print_help(const char* argv0)
 {
+    fprintf(stderr,
+            "Aupatterns. (c) 2011 Zoltan Puskas <zoltan@sinustrom.info>\n");
+    fprintf(stderr,
+            "This software is provided under the 3-clause BSD licese.\n\n");
     fprintf(stderr,
             "Usage: %s [-s] [-r LENGTH] [-o FILE] [-g NODES] [-e EDGE] [-h]\n",
             argv0);
@@ -443,7 +455,8 @@ void print_summary(const struct tree_node * const root_node)
     }
     printf("-------------------------------------------\n");
     printf("Number of all available patterns: %d\n", sum);
-    printf("Number of valid patterns (length >= 4): %d\n", valid_sum);
+    printf("Number of valid patterns (length >= 4): %d (Bruteforce* %d mins)\n",
+            valid_sum, valid_sum/5);
     printf("(* assuming 5 tries in 30 seconds and then a 30 second timeout)\n");
 
     return;
@@ -492,14 +505,7 @@ void fill_guess_matrix(char* nodelist, int block_matrix[][10])
 {
     int nodes[MAX_POINTS] = {0};
     int i,j;
-    
-    /* init all transitions to illegal */
-    for(i=0; i<MAX_POINTS+1; i++) {
-        for(j=0; j<10; j++) {
-            block_matrix[i][j] = -1;
-        }
-    }
-
+     
     /* add nodes to be used of guessing */
     for(i=0, j=0; nodelist[i]!='\0'; i++)
     {
@@ -514,10 +520,44 @@ void fill_guess_matrix(char* nodelist, int block_matrix[][10])
     {
         for(j = 0; j < MAX_POINTS+1; j++)
         {
-            block_matrix[nodes[i]][nodes[j]] =
+            /* if not edge not disabled previously */
+            if (block_matrix[nodes[i]][nodes[j]] != -2)
+            {
+                block_matrix[nodes[i]][nodes[j]] =
                     pattern_block_matrix[nodes[i]][nodes[j]];
+            }
         }
     }
+    
+    return;
+}
+/*
+ * Disable specific edges in the guess matrix.
+ *
+ * \param edge edge to disable
+ * \param block_matrix the transition matrix to be modified
+ */
+void disable_guess_edge(char* edge, int block_matrix[][10])
+{
+    int node[2] = {0, 0};
+    int i;
+
+    /* extract edge information */
+    for (i=0; edge[i] != '\0' && i < 2; i++) {
+        node[i] = edge[i] - '0';
+        if (node[i] < 1 || node[i] > MAX_POINTS) {
+            node[i] = 0;
+        }
+    }
+
+    /* not a valid edge */
+    if (node[0] == node[1] || node[0] == 0 || node[1] == 0)
+    {
+        return;
+    }
+
+    block_matrix[node[0]][node[1]] = -2;
+    block_matrix[node[1]][node[0]] = -2;
     
     return;
 }
