@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
     int guess_flag = 0;
     int gen_pattern_len = 0;
     FILE *pattern_file = NULL;
-    char *guess_node_list;
+    char *guess_node_list = NULL;
     int i, j;
 
     if (argc < 2) {
@@ -498,10 +498,10 @@ void print_random_patterns(const struct tree_node * const root_node, int len)
  */
 void fill_guess_matrix(char* nodelist, int block_matrix[][10])
 {
-    int nodes[MAX_POINTS] = {0};
+    int nodes[MAX_POINTS+1] = {0};
     int i,j;
      
-    /* add nodes to be used of guessing */
+    /* add nodes to be used for guessing */
     for(i=0, j=0; nodelist[i]!='\0'; i++)
     {
         j = nodelist[i] - '0';
