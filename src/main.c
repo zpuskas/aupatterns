@@ -442,7 +442,7 @@ void print_summary(const struct tree_node * const root_node)
     count_valid_patterns(root_node, pattern_count, 0);
 
     for (i = 0; i < MAX_POINTS; i++) {
-        printf("Number of patterns for lenght %d: %d\t\
+        printf("Number of patterns for length %d: %d\t\
                 Minutes to bruteforce*: %d\n",
                 i+1, pattern_count[i], pattern_count[i]/5);
         sum += pattern_count[i];
