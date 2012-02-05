@@ -443,14 +443,14 @@ void print_summary(const struct tree_node * const root_node)
 
     for (i = 0; i < MAX_POINTS; i++) {
         printf("Number of patterns for length %d: %d\t\
-                Minutes to bruteforce*: %d\n",
+                Minutes to brute-force*: %d\n",
                 i+1, pattern_count[i], pattern_count[i]/5);
         sum += pattern_count[i];
         if (i > 2) valid_sum += pattern_count[i];
     }
     printf("-------------------------------------------\n");
     printf("Number of all available patterns: %d\n", sum);
-    printf("Number of valid patterns (length >= 4): %d (Bruteforce* %d mins)\n",
+    printf("Number of valid patterns (length >= 4): %d (Brute-force* %d mins)\n",
             valid_sum, valid_sum/5);
     printf("(* assuming 5 tries in 30 seconds and then a 30 second timeout)\n");
 
