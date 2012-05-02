@@ -1,0 +1,80 @@
+The security of the Android unlock pattern lock screen
+
+Android phones are more just then phones, they are portable mini computers.
+They not only serve us to make calls but people also check email, Facebook,
+access messenger services, browse the internet and do many more on these 
+devices. As a result they contain a lot of private and/or business information
+that must be protected from prying eyes (or at least highly recommended). For
+this reason the security of the locking mechanism of the phone has more
+importance then before.
+
+On Android smart phones there several options to lock the phone. Slide, pattern,
+pin and password. The slide option offers no security, it only prevents
+accidental actions on the phone just like the simple key combination on the old 
+phones. The pattern unlock screen contains 9 dots in a 3x3 matrix. In order to 
+unlock the phone some dots have to be connected in a certain order. This is a 
+new, previously unused method and protects the phone from unauthorized access.
+Pin code is a number combination while the password is alphanumerical 
+combination that has to be entered into the phone in order to unlock it. These
+also protect the phone from unauthorized access.
+
+The math for the PIN/password security methods is well known, but except for one 
+site (that has incorrect and incomplete calculations) I could not find anything 
+meaningful on pattern security. Since in my experience people use either 
+the slide or the pattern (including myself) to lock the phone and maybe pin,
+I wanted to know actually how secure my data is. I will not take into 
+consideration the password unlock here since it is too impractical for everyday 
+use.
+
+The Android unlock pattern.
+
+The Android unlock pattern has 9 dots on the screen organized in a 3x3 matrix.
+To unlock the phone a so called pattern has to be drawn on the screen, which
+means connecting certain points in a certain order. So how many valid patterns
+are there? For this lets first observe the rules of pattern drawing:
+- at minimum 4 dots have to be used
+- at maximum 9 dots can be used
+- one dot can be used only once
+- the order in which the dots are connected matters
+- dots are connected with a straight line (all points on the path of the
+  line get connected)
+
+The last rule introduces some conditional connection paths. When connecting two
+points with a straight line it is valid only if there is no unused
+point in the way. For example: you cannot connect points 1 and 3 unless point
+2 is already is used. So by default drawing a line from 1 to 3 will result in
+the pattern 1->2->3. However if point 2 is used the transition 1->3 becomes
+valid, such as in 2->1->3.
+
+Also what some people seem to omit is that connecting points in a slight
+diagonal is possible (especially on Android 4, since the dots became smaller)
+such as 2->7.
+
+Pattern security analysis (compared with PIN)
+
+To find out what and how many patterns there are I have written a small
+program. It also can be used to generate random patterns for you to use on
+your device (the same way pwgen is used for password generation for computers).
+
+Let us compare the security of the pattern unlock to the old school PIN code.
+For that lets see the raw data:
+
+[Look at spreadsheet data]
+
+As you can see for a given number of dots there are much fewer combinations
+than for the same amount of numbers when used in a PIN code. However it is 
+compensated for by limiting the speed and amount of tries. The phone allows
+5 tries before suspending the lock screen for 30 seconds (both PIN and pattern). 
+The limit for pattern tries is set to 20 before it locks the user out completely
+and asks for the Google account and password. For PIN I don't see any limits or
+at least it is set to a high value (after 50 wrong codes I'm still not locked 
+out).
+
+The table above shows that by using patterns that are at least five dots long
+the random brute force success rate is well below 1%. Not taking into account
+other factors (e.g. smudge on the screen, frequently used patterns & numbers),
+we can say that the 5 dot long pattern is similar in strength to a 4 digit PIN
+combination and a 7 dot long pattern is similar in strength to a 5 digit PIN
+combination. However a 6 digit PIN is already more secure then all the
+patterns combined together.
+
