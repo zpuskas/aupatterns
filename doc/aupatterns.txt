@@ -67,7 +67,7 @@ compensated for by limiting the speed and amount of tries. The phone allows
 5 tries before suspending the lock screen for 30 seconds (both PIN and pattern). 
 The limit for pattern tries is set to 20 before it locks the user out completely
 and asks for the Google account and password. For PIN I don't see any limits or
-at least it is set to a high value (after 50 wrong codes I'm still not locked 
+at least it is set to a high value (after 60 wrong codes I'm still not locked 
 out).
 
 The table above shows that by using patterns that are at least five dots long
@@ -77,4 +77,11 @@ we can say that the 5 dot long pattern is similar in strength to a 4 digit PIN
 combination and a 7 dot long pattern is similar in strength to a 5 digit PIN
 combination. However a 6 digit PIN is already more secure then all the
 patterns combined together.
+
+However life is not purely mathematical. Most (all?) of the touchscreens will
+retain a smudge from the fingers after usage. Sometimes it is just chaos but
+if the unlock pattern is used regularly the patterns path can be seen viewed
+from certain angles. This is also the case for the PIN mode. Dots on the screen
+can be seen at the locations of the numbers. So lets see how does this help
+the attacker.
 

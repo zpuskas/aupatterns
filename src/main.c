@@ -1,7 +1,7 @@
 /*
  * Andorid unlock pattern calculator.
  * Copyright (c) 2011  Zoltan Puskas
- *  All rights reserved.
+ * All rights reserved.
  *
  * This program is free software and redistributred under the 3-clause BSD
  * license as stated below.
@@ -442,9 +442,11 @@ void print_summary(const struct tree_node * const root_node)
     count_valid_patterns(root_node, pattern_count, 0);
 
     for (i = 0; i < MAX_POINTS; i++) {
-        printf("Number of patterns for length %d: %d\t\
-                Minutes to brute-force*: %d\n",
-                i+1, pattern_count[i], pattern_count[i]/5);
+        if(pattern_count[i] > 0) {
+            printf("Number of patterns for length %d: %d\t\
+                    Minutes to brute-force*: %d\n",
+                    i+1, pattern_count[i], pattern_count[i]/5);
+        }
         sum += pattern_count[i];
         if (i > 2) valid_sum += pattern_count[i];
     }
@@ -452,7 +454,7 @@ void print_summary(const struct tree_node * const root_node)
     printf("Number of all available patterns: %d\n", sum);
     printf("Number of valid patterns (length >= 4): %d (Brute-force* %d mins)\n",
             valid_sum, valid_sum/5);
-    printf("(* assuming 5 tries in 30 seconds and then a 30 second timeout)\n");
+    printf("(* assuming 5 tries in 30 seconds and then a 30 second timeout, no limit on number of tires)\n");
 
     return;
 }
