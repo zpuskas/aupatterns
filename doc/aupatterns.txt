@@ -56,10 +56,11 @@ To find out what and how many patterns there are I have written a small
 program. It also can be used to generate random patterns for you to use on
 your device (the same way pwgen is used for password generation for computers).
 
-Let us compare the security of the pattern unlock to the old school PIN code.
-For that lets see the raw data:
+First let us see the numbers (both raw and derived data).
 
 [Look at spreadsheet data]
+
+Let us compare the security of the pattern unlock to the old school PIN code.
 
 As you can see for a given number of dots there are much fewer combinations
 than for the same amount of numbers when used in a PIN code. However it is 
@@ -78,10 +79,37 @@ combination and a 7 dot long pattern is similar in strength to a 5 digit PIN
 combination. However a 6 digit PIN is already more secure then all the
 patterns combined together.
 
-However life is not purely mathematical. Most (all?) of the touchscreens will
-retain a smudge from the fingers after usage. Sometimes it is just chaos but
-if the unlock pattern is used regularly the patterns path can be seen viewed
-from certain angles. This is also the case for the PIN mode. Dots on the screen
-can be seen at the locations of the numbers. So lets see how does this help
-the attacker.
+However life is not purely mathematical so let's consider factors not
+accounted for previously. 
 
+Most (all?) of the touch screens will retain a smudge from the fingers after
+usage. Sometimes it is just chaos but if the unlock pattern is used regularly
+the patterns path can be seen viewed from certain angles. This is also the case
+for the PIN mode. Dots on the screen can be seen at the locations of the numbers.
+This will tell the attacker what dots/numbers are used. In the case of the PIN
+the attacker is not really helped out since the length of the PIN is still
+unknown to him, so there is still a lot of possibilities (since one number can
+be used multiple times). 
+
+In the case of pattern unlock the used dots will be known and thus the number of
+patterns reduced significantly. In the table above one can see the distribution
+of pattern counts for different dot counts. For 4 long patterns for a given dot
+choice at maximum there will be 24 patterns, but what is worse for some choices
+there are only 2 valid patterns! 
+
+This means that given 20 tires with the smudge the attacker can get access to
+the device with a high probability. The situation is slightly better for 5 dot
+long patterns, somehow acceptable for 6 length patterns and goes beyond 1%
+with 7 dots or more. An pattern path smudge (or a final patterns seen over the
+shoulder) will significantly reduce the security of the pattern unlock mechanism.
+
+Of course the smudge can be avoided by wiping the screen from time to time and
+over the shoulder peeking by disabling the path visibility in the settings (in
+this case the pattern is not drawn on the screen while unlocking).
+
+Conclusion
+
+The pattern unlock mechanism is an acceptable compromise between security and 
+comfort of the user. Still it is much weaker then the PIN unlock, so if you
+have important and/or sensitive data on the phone I still suggest using the
+good old PIN method.
