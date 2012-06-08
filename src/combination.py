@@ -36,6 +36,7 @@ for num in range(4, 10):
 	valid_pat = re.compile(r'Number of patterns for length ([0-9]+): ([0-9]+).*')
 	for combo in combination(range(1,10), num):
 		dotlist = ''.join(map(str, combo))
+		print ' '.join(['Running', dotlist])
 		p = Popen(' '.join(["../bin/aupatterns -g", dotlist]), stdout=PIPE, shell=True)
 		for line in p.stdout.readlines():
 			m = valid_pat.match(line)
