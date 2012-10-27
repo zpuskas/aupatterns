@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    /* currently no arguments are accepted */
+    /* parse agrumenst */
     while((opt = getopt(argc, argv, "sr:o:g:e:h")) != -1) {
         switch (opt) {
         case 's':
