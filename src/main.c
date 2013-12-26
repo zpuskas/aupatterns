@@ -29,16 +29,13 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Maintainer: Zoltan Puskas <zoltan@sinustrom.info>
- * Created on: 2011.10.10.
- *
  * The programs purpose is to calculate all possible valid Android unlock 
- * patterns. This is used for informational purposes (my intrest). Also this
+ * patterns. This is used for informational purposes (my interest). Also this
  * program can be used to generate a random pattern to use on the phone 
  * (something like `pwgen`).
  *
  * On the Android lock screen there are 9 dots arranged in a 3x3 matrix. A 
- * pattern of arbirtary length must be drawn on the screen in order to unlock
+ * pattern of arbitrary length must be drawn on the screen in order to unlock
  * the phone.
  * The following restrictions apply to the pattern drawing:
  *  - any point can be used only once
@@ -46,7 +43,7 @@
  *  - pattern can contain maximum 9 points
  *  - cannot jump over neighboring points (e.g. moving finger from point 1 to 3
  *    will automatically connect point 2 to form pattern 1-2-3, unless 2 is
- *    alreay used in which case ..-1-3-.. is possible).
+ *    already used in which case ..-1-3-.. is possible).
  *
  */
 
@@ -128,7 +125,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    /* parse agrumenst */
+    /* parse arguments */
     while((opt = getopt(argc, argv, "sr:o:g:e:h")) != -1) {
         switch (opt) {
         case 's':
@@ -145,7 +142,7 @@ int main(int argc, char *argv[])
             pattern_file = fopen(optarg, "w");
             if (pattern_file == NULL) {
                 fprintf(stderr, 
-                "Could not open \"%s\" output file for writting",
+                "Could not open \"%s\" output file for writing",
                 optarg);
             }
             break;
@@ -228,7 +225,7 @@ void print_help(const char* argv0)
     fprintf(stderr,
             "Aupatterns. (c) 2011 Zoltan Puskas <zoltan@sinustrom.info>\n");
     fprintf(stderr,
-            "This software is provided under the 3-clause BSD licese.\n\n");
+            "This software is provided under the 3-clause BSD license.\n\n");
     fprintf(stderr,
             "Usage: %s [-s] [-r LENGTH] [-o FILE] [-g NODES] [-e EDGE] [-h]\n",
             argv0);
@@ -318,7 +315,7 @@ void add_subnodes(struct tree_node *parent_node,
 }
 
 /*
- * Delte entire subtree under the node
+ * Delete entire subtree under the node
  *
  * \param node The node under which the subtree must be deleted.
  */
@@ -338,7 +335,7 @@ void delete_subtree(struct tree_node *node)
 }
 
 /*
- * Function to decide whether it is an illegal transition on the 
+ * Function to decide whether it is an illegal transition on 
  * the current branch or not
  *
  * \param parent_id Node ID of the parent
@@ -496,7 +493,7 @@ void print_random_patterns(const struct tree_node * const root_node, int len)
  * Fill up the restricted transition matrix with the limited transitions
  *
  * \param nodelist node numbers
- * \param block_matrix the transion matrix to set up
+ * \param block_matrix the transition matrix to set up
  */
 void fill_guess_matrix(char* nodelist, int block_matrix[][10])
 {

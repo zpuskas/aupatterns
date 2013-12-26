@@ -7,9 +7,6 @@
 # This program is free software and redistributred under the 3-clause BSD
 # license. For details see attached license file COPYING
 #
-# Maintainer: Zoltan Puskas <zoltan@sinustrom.info>
-# Created on: 2012.02.03.
-#
 
 import re
 from subprocess import *
